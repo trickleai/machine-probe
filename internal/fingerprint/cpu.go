@@ -185,6 +185,11 @@ var containerCgRe = regexp.MustCompile(`docker|kubepods|containerd|crio|lxc|libp
 var gvisorRe = regexp.MustCompile(`(?i)gvisor|runsc`)
 var wslRe = regexp.MustCompile(`(?i)microsoft|wsl`)
 
+// containerInits are minimal init processes that container runtimes run as PID 1. They
+// catch containers whose cgroup namespace hides the runtime name (/proc/1/cgroup is
+// just "0::/"), such as Fly.io Sprites, where PID 1 is tini.
+var containerInits = map[string]bool{"tini": true, "tini-static": true, "docker-init": true, "dumb-init": true, "catatonit": true}
+
 // virtioMmioDevice reports whether a /sys/devices/platform entry is a virtio-mmio
 // transport: "virtio-mmio.N" (declared on the kernel command line), "<addr>.virtio_mmio"
 // (device tree, as on arm64) or "LNRO0005:NN" (the ACPI HID, as Firecracker uses on x86).
@@ -331,6 +336,9 @@ func collectVirtualization(ctx context.Context, c CPU) Virtualization {
 	}
 	if containerCgRe.MatchString(util.Read("/proc/1/cgroup")) {
 		signals = append(signals, "container runtime in /proc/1/cgroup")
+	}
+	if init := util.First(util.Read("/proc/1/comm")); containerInits[init] {
+		signals = append(signals, "PID 1 is the container init "+init)
 	}
 	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
 		signals = append(signals, "Kubernetes env vars")

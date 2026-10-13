@@ -92,6 +92,17 @@ func stampPages(buf []byte, block int) {
 	}
 }
 
+const (
+	syncSpanMiB = 16 // file size used by syncLatency
+	spareMiB    = 16 // headroom left free on the filesystem under test
+)
+
+// freeMiB reports the space available to unprivileged writers at dir.
+func freeMiB(dir string) (uint64, bool) {
+	st, ok := util.Statfs(dir)
+	return st.Free >> 20, ok
+}
+
 // syncLatency does random 4 KiB writes, each followed by fdatasync.
 func syncLatency(ctx context.Context, path string, ops int) (lat []float64, total time.Duration, err error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0o600)
@@ -99,7 +110,7 @@ func syncLatency(ctx context.Context, path string, ops int) (lat []float64, tota
 		return
 	}
 	defer f.Close()
-	const span = 16 << 20
+	const span = syncSpanMiB << 20
 	if err = f.Truncate(span); err != nil {
 		return
 	}
@@ -162,14 +173,24 @@ func diskTests(p Profile, dirs []string) []Test {
 				}
 				defer os.RemoveAll(tmp)
 				var r Rep
-				w, rd, direct, err := seqIO(ctx, filepath.Join(tmp, "seq.bin"), p.DiskMB)
-				if err != nil {
-					return r, err
-				}
-				r.Hi("mp_seq_write_mibs", "MiB/s", w)
-				r.Hi("mp_seq_read_mibs", "MiB/s", rd)
-				if !direct {
-					r.Notes = "O_DIRECT unsupported here; buffered I/O + fdatasync used (reads likely served from page cache)."
+				need := uint64(p.DiskMB + syncSpanMiB + spareMiB)
+				if free, ok := freeMiB(dir); ok && free < need {
+					// Shrinking the file would make the numbers incomparable with other runs,
+					// so skip the sequential part on small filesystems (e.g. a 64 MiB /dev/shm).
+					r.Notes = fmt.Sprintf("Sequential test skipped: %d MiB free at %s, it needs %d MiB.", free, dir, need)
+					if free < syncSpanMiB+spareMiB {
+						return r, nil
+					}
+				} else {
+					w, rd, direct, err := seqIO(ctx, filepath.Join(tmp, "seq.bin"), p.DiskMB)
+					if err != nil {
+						return r, err
+					}
+					r.Hi("mp_seq_write_mibs", "MiB/s", w)
+					r.Hi("mp_seq_read_mibs", "MiB/s", rd)
+					if !direct {
+						r.Notes = "O_DIRECT unsupported here; buffered I/O + fdatasync used (reads likely served from page cache)."
+					}
 				}
 				lat, total, err := syncLatency(ctx, filepath.Join(tmp, "sync.bin"), p.LatOps)
 				if err != nil || len(lat) == 0 {

@@ -85,6 +85,7 @@ make dist           # 交叉编译 dist/machine-probe-linux-{amd64,arm64}
 - 分组分 = 组内指标加权平均；总分 = 分组加权平均（CPU 35%、磁盘 25%、内存 15%、负载 15%、网络 10%），缺少的分组按剩余权重重新归一。
 - “主流”指当前一代 4 vCPU 通用型云主机（Graviton3 / Sapphire Rapids / Genoa + 普通云盘）。CPU 类指标以 Neoverse-V1（Graviton3）vCPU 为主流锚点校准；磁盘、网络锚点参考常见云盘限速和本地 NVMe 水平。**锚点是估算值**，用来建立直观感受，不是厂商排名；锚点表在 `internal/bench/references.go`，`score.reference` 记录了版本号。
 - 磁盘只对第一个支持 O_DIRECT 的目录（真实块设备）计分，`/dev/shm` 等内存盘只展示不计分。
+- 目录剩余空间不够写顺序测试的文件时（例如容器里默认 64 MiB 的 `/dev/shm`），跳过顺序读写并在 notes 里注明，同步写和小文件测试照常跑。
 - 总分衡量的是“单位资源质量”，多核按“每 vCPU 性能”计分，不随 vCPU 数量线性增长；比较不同规格的机器时请同时看 `mp_multi_score`。
 - `report` 重新生成 HTML 时会用当前锚点表重算评分；`compare` 同时输出绝对评分和相对评分（100 = 参与对比中最好的机器）。
 
