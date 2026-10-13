@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SamdyChen2023/machine-probe/internal/util"
+	"github.com/trickleai/machine-probe/internal/util"
 )
 
 var sink atomic.Uint64 // keeps the compiler from discarding benchmark work

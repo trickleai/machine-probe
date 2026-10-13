@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/SamdyChen2023/machine-probe/internal/fingerprint"
+	"github.com/trickleai/machine-probe/internal/fingerprint"
 )
 
 // Metric is the aggregate of one measured quantity across repeats.

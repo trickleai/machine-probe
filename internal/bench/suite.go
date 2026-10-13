@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/SamdyChen2023/machine-probe/internal/fingerprint"
-	"github.com/SamdyChen2023/machine-probe/internal/util"
+	"github.com/trickleai/machine-probe/internal/fingerprint"
+	"github.com/trickleai/machine-probe/internal/util"
 )
 
 type Options struct {

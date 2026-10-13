@@ -6,8 +6,8 @@ import (
 	_ "embed"
 	"encoding/json"
 
-	"github.com/SamdyChen2023/machine-probe/internal/bench"
-	"github.com/SamdyChen2023/machine-probe/internal/fingerprint"
+	"github.com/trickleai/machine-probe/internal/bench"
+	"github.com/trickleai/machine-probe/internal/fingerprint"
 )
 
 //go:embed report.html

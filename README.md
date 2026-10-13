@@ -9,7 +9,7 @@
 ## 安装
 
 ```bash
-go install github.com/SamdyChen2023/machine-probe@latest   # 需要 Go 1.22+
+go install github.com/trickleai/machine-probe@latest   # 需要 Go 1.22+
 ```
 
 或者克隆后本地构建：

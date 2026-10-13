@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SamdyChen2023/machine-probe/internal/util"
+	"github.com/trickleai/machine-probe/internal/util"
 )
 
 func parseKV(text string) map[string]string {

@@ -6,7 +6,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/SamdyChen2023/machine-probe/internal/bench"
+	"github.com/trickleai/machine-probe/internal/bench"
 )
 
 const NoisyCV = 25 // percent; above this a median is flagged as unreliable

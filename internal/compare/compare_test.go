@@ -3,7 +3,7 @@ package compare
 import (
 	"testing"
 
-	"github.com/SamdyChen2023/machine-probe/internal/bench"
+	"github.com/trickleai/machine-probe/internal/bench"
 )
 
 func run(label string, score, lat float64) *bench.Run {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SamdyChen2023/machine-probe/internal/bench"
-	"github.com/SamdyChen2023/machine-probe/internal/fingerprint"
+	"github.com/trickleai/machine-probe/internal/bench"
+	"github.com/trickleai/machine-probe/internal/fingerprint"
 )
 
 func TestRenderEmbedsEscapedJSON(t *testing.T) {

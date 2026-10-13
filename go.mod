@@ -1,3 +1,3 @@
-module github.com/SamdyChen2023/machine-probe
+module github.com/trickleai/machine-probe
 
 go 1.22.2

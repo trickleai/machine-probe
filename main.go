@@ -14,11 +14,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/SamdyChen2023/machine-probe/internal/bench"
-	"github.com/SamdyChen2023/machine-probe/internal/compare"
-	"github.com/SamdyChen2023/machine-probe/internal/fingerprint"
-	"github.com/SamdyChen2023/machine-probe/internal/report"
-	"github.com/SamdyChen2023/machine-probe/internal/util"
+	"github.com/trickleai/machine-probe/internal/bench"
+	"github.com/trickleai/machine-probe/internal/compare"
+	"github.com/trickleai/machine-probe/internal/fingerprint"
+	"github.com/trickleai/machine-probe/internal/report"
+	"github.com/trickleai/machine-probe/internal/util"
 )
 
 var version = "dev"

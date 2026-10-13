@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SamdyChen2023/machine-probe/internal/util"
+	"github.com/trickleai/machine-probe/internal/util"
 )
 
 // Collect gathers the fingerprint. Every probe is best-effort: failures leave fields empty.
