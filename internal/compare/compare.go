@@ -166,7 +166,7 @@ func Runs(runs []*bench.Run) *Comparison {
 		shared = shared || s != nil
 	}
 	if !shared {
-		c.Warnings = append(c.Warnings, "No metric is shared by two or more runs (e.g. machine-probe mp_* vs machine-lab js_* keys), so no scores can be computed.")
+		c.Warnings = append(c.Warnings, "No metric is shared by two or more runs (e.g. results from different tools), so no scores can be computed.")
 	}
 	if len(profiles) > 1 {
 		c.Warnings = append(c.Warnings, "Runs used different profiles (quick vs full) — repeat counts and sizes differ.")

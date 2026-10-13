@@ -1,10 +1,10 @@
 # machine-probe
 
-参考 [machine-lab](https://github.com/SamdyChen2023/machine-lab) 用 Go 编写的单文件 CLI：采集机器环境指纹 + 跑一组基准测试，输出 **JSON 结果文件**，并用**内置的静态 HTML 模板**同时生成一份离线可打开的 **HTML 报告**。
+用 Go 编写的单文件 CLI：采集机器环境指纹 + 跑一组基准测试，输出 **JSON 结果文件**，并用**内置的静态 HTML 模板**同时生成一份离线可打开的 **HTML 报告**。
 
 - 零外部依赖：只用 Go 标准库，`CGO_ENABLED=0` 静态编译，拷一个二进制到目标机器即可运行
 - HTML 模板通过 `go:embed` 编进二进制，报告是单文件（内嵌 CSS/JS/数据，无 CDN）
-- 结果文档结构与 machine-lab 一致（`schema/id/label/profile/fingerprint/results[].metrics{median,mean,min,max,cv,n,samples}`），`report` / `compare` 也能读取 machine-lab 的结果文件
+- 结果文档结构：`schema/id/label/profile/fingerprint/results[].metrics{median,mean,min,max,cv,n,samples}`
 
 ## 安装
 
@@ -36,7 +36,7 @@ make dist           # 交叉编译 dist/machine-probe-linux-{amd64,arm64}
 ./machine-probe info            # 可读表格
 ./machine-probe info --json     # 完整 JSON
 
-# 从已有 JSON（包括 machine-lab 的结果）重新生成 HTML 报告
+# 从已有 JSON 结果重新生成 HTML 报告
 ./machine-probe report result.json --out result.html
 
 # 多台机器对比（终端表格，按组几何平均打分，100 = 该组最优）
@@ -90,7 +90,7 @@ make dist           # 交叉编译 dist/machine-probe-linux-{amd64,arm64}
 
 ## 注意
 
-- 指标 key 统一加 `mp_` 前缀，与 machine-lab 的 `js_*` / `dd_*` 区分。两者算法不同，**不要直接比较同名含义的数值**；`compare` 只会对两边都有的 key 打分。
+- 指标 key 统一加 `mp_` 前缀；`compare` 只会对两边都有的 key 打分。
 - CPU 分数是相对分，只用于机器之间横向比较（同一 machine-probe 版本）。
 - 顺序写在某些虚拟磁盘上会比 `dd bs=1M oflag=direct` 高很多：Go 的大缓冲区通常由透明大页支撑、物理连续，而 `dd` 的缓冲区是 4K 页，在 `max_segments` 很小的 virtio 设备上会被拆成小请求。写入数据为随机内容且每个 4K 页唯一，避免存储层压缩/去重虚高。
 - 磁盘目录不支持 O_DIRECT（如 tmpfs）时回退到缓冲 I/O + fdatasync，读速度此时主要反映页缓存，结果里会附注说明。

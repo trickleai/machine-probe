@@ -82,7 +82,7 @@ func PointScore(v float64, r Ref) float64 {
 }
 
 // Score rates a run against References. It returns nil when no reference metric is present
-// (e.g. a machine-lab file, whose keys are js_*/dd_*).
+// (e.g. a result file from another tool).
 func Score(run *Run) *Scorecard {
 	sc := &Scorecard{Reference: RefVersion, Scale: scaleNote}
 	diskDir, diskNote := scoredDiskDir(run.Results)

@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// Load reads a result document. Field type mismatches (e.g. files written by machine-lab)
+// Load reads a result document. Field type mismatches (e.g. files written by other tools)
 // are tolerated: encoding/json fills every compatible field and reports only the first mismatch.
 func Load(path string) (*Run, error) {
 	b, err := os.ReadFile(path)
@@ -22,7 +22,7 @@ func Load(path string) (*Run, error) {
 		}
 	}
 	if r.Results == nil && r.Fingerprint == nil {
-		return nil, fmt.Errorf("%s: not a machine-probe / machine-lab result file", path)
+		return nil, fmt.Errorf("%s: not a machine-probe result file", path)
 	}
 	return &r, nil
 }

@@ -40,7 +40,7 @@ func TestScorePicksBlockDiskAndDerives(t *testing.T) {
 	if disk.Metrics[0].Test != "disk.seq@/tmp" || disk.Score != 65 {
 		t.Fatalf("disk = %+v", disk)
 	}
-	if Score(&Run{Results: []Result{{ID: "x", Metrics: Metrics{{"js_score", m(1)}}}}}) != nil {
+	if Score(&Run{Results: []Result{{ID: "x", Metrics: Metrics{{"other_score", m(1)}}}}}) != nil {
 		t.Fatal("unscorable run should yield nil")
 	}
 }
