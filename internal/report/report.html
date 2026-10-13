@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>machine-probe 机器规格书</title>
+<style>
+  /* Datasheet look: aluminium paper, graphite ink, one orange needle for measured values. */
+  :root {
+    --paper: #E7EAEE; --sheet: #F7F8FA; --ink: #14181D; --ink-2: #4F5966; --ink-3: #7D8692;
+    --rule: #C3CAD2; --rule-soft: #DCE0E5; --needle: #E4570E;
+    --excellent: #1D7457; --good: #2B58A6; --fair: #A86E12; --weak: #AE3434;
+    --z-weak: #EFD8D5; --z-fair: #F2E5CB; --z-good: #D7E1F2; --z-excellent: #D2E9DE;
+    --f-display: "DIN Alternate", "DIN 2014", "Bahnschrift", "D-DIN", "Barlow Condensed", "Roboto Condensed", "Nimbus Sans Narrow", "Arial Narrow", sans-serif;
+    --f-body: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    --f-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body { margin: 0; color: var(--ink); font: 14px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
+  .mono, td.num, .val { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+  /* masthead */
+  .mast { padding: 26px 0 22px; border-bottom: 2px solid var(--ink); }
+  .mast-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font: 500 12px/1 var(--f-mono); color: var(--ink-2); letter-spacing: .04em; }
+  .mast-top .doc { color: var(--ink); font-weight: 700; }
+  .mast h1 { margin: 18px 0 4px; font: 700 clamp(30px, 5vw, 46px)/1.05 var(--f-display); letter-spacing: -.01em; }
+  .spec { margin: 0; color: var(--ink-2); font: 13px/1.5 var(--f-mono); }
+  .spec span + span::before { content: " / "; color: var(--ink-3); }
+
+  /* section heads */
+  section { margin: 36px 0; }
+  .sh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+  .sh h2 { white-space: nowrap; margin: 0; font: 700 20px/1.2 var(--f-display); letter-spacing: .01em; }
+  .sh p { margin: 0; color: var(--ink-3); font-size: 12px; }
+  .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; }
+
+  /* verdict + calibration ruler */
+  .verdict { display: grid; grid-template-columns: auto 1fr; gap: 10px 36px; align-items: end; padding: 26px 28px 8px; }
+  .grade { display: flex; align-items: baseline; gap: 10px; }
+  .grade-num { font: 700 88px/0.85 var(--f-display); letter-spacing: -.03em; }
+  .grade-of { font: 500 14px var(--f-mono); color: var(--ink-3); }
+  .grade-label { font: 700 22px var(--f-display); color: var(--c); }
+  .verdict-text { margin: 0; max-width: 60ch; font-size: 15px; }
+  .verdict-text b { font-weight: 600; }
+  .verdict-text .lo { color: var(--weak); }
+  .hero-ruler { position: relative; margin: 8px 28px 0; padding: 74px 0 44px; }
+  .hr-track { position: relative; height: 18px; display: flex; border: 1px solid var(--ink); }
+  .hr-track i { display: block; height: 100%; }
+  .hr-ticks { position: absolute; left: 0; right: 0; top: 74px; height: 18px; pointer-events: none;
+    background: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 5%) bottom / 100% 6px no-repeat; }
+  .hr-zone { position: absolute; top: 98px; font: 600 12px var(--f-display); color: var(--ink-2); transform: translateX(-50%); white-space: nowrap; }
+  .hr-num { position: absolute; top: 98px; font: 11px var(--f-mono); color: var(--ink-3); transform: translateX(-50%); }
+  .hr-num.edge { top: 116px; }
+  .hr-group { position: absolute; transform: translateX(-50%); text-align: center; font-size: 12px; white-space: nowrap; }
+  .hr-group::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; background: var(--ink-2); height: var(--stem); }
+  .hr-group b { font: 600 13px var(--f-mono); margin-left: 3px; }
+  .needle { position: absolute; left: var(--x); animation: sweep .9s cubic-bezier(.2, .8, .2, 1) both; animation-delay: var(--d, 0s); }
+  .hr-needle { top: 64px; width: 0; height: 38px; }
+  .hr-needle::before { content: ""; position: absolute; left: -1.5px; top: 0; width: 3px; height: 100%; background: var(--needle); }
+  .hr-needle::after { content: ""; position: absolute; left: -7px; top: -9px; border: 7px solid transparent; border-top: 9px solid var(--needle); border-bottom: 0; }
+  .hr-mark { position: absolute; top: 62px; width: 1px; height: 12px; background: var(--ink-2); }
+  .hr-list { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 6px 28px 10px; font-size: 12px; }
+  .hr-list:empty { display: none; }
+  .hr-list b { font: 600 13px var(--f-mono); color: var(--c); }
+  @keyframes sweep { from { left: 0; } }
+  .legend { margin: 0; padding: 4px 28px 22px; color: var(--ink-2); font-size: 12px; }
+
+  /* characteristics tables */
+  .group { margin-bottom: 18px; overflow: hidden; }
+  .group-head { display: flex; align-items: baseline; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--rule); }
+  .group-head h3 { margin: 0; font: 700 17px var(--f-display); }
+  .group-head .gs { font: 600 15px var(--f-mono); color: var(--c); }
+  .group-head .gw { margin-left: auto; font: 11px var(--f-mono); color: var(--ink-3); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule-soft); }
+  tr:last-child > td, tr:last-child > th { border-bottom: 0; }
+  thead th { font: 600 11px/1.2 var(--f-mono); color: var(--ink-3); letter-spacing: .05em; text-transform: uppercase; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); background: #EFF1F4; }
+  .num { text-align: right; }
+  table.char { table-layout: fixed; }
+  .char col.c-val { width: 150px; } .char col.c-anc { width: 76px; } .char col.c-pos { width: 196px; } .char col.c-rate { width: 92px; }
+  .char td:first-child { padding-left: 18px; }
+  .char .p-name { font-weight: 600; }
+  .char .p-hint { display: block; margin-top: 2px; color: var(--ink-3); font-size: 12px; line-height: 1.45; max-width: 46ch; }
+  .char .val { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .char .val small { font: 11px var(--f-mono); color: var(--ink-3); margin-left: 3px; font-weight: 400; }
+  .char .cmp { display: block; font: 11px/1.4 var(--f-body); color: var(--ink-2); font-weight: 400; white-space: normal; margin-top: 3px; }
+  .char .anc { color: var(--ink-2); font-size: 12px; white-space: nowrap; }
+  .char .anc.typ { color: var(--ink); font-weight: 600; }
+  .mini { position: relative; width: 168px; height: 12px; margin-top: 6px; display: flex; }
+  .mini i { display: block; height: 100%; }
+  .mini .tk { position: absolute; top: -2px; width: 1px; height: 16px; background: var(--ink-2); }
+  .mini .needle { top: -5px; width: 3px; height: 22px; margin-left: -1.5px; background: var(--needle); border-radius: 1px; }
+  .rate { white-space: nowrap; font: 600 13px var(--f-mono); color: var(--c); }
+  .rate span { font: 600 12px var(--f-body); margin-left: 6px; }
+  .noisy { color: var(--fair); }
+  .r-excellent { --c: var(--excellent); } .r-good { --c: var(--good); } .r-fair { --c: var(--fair); } .r-weak { --c: var(--weak); }
+  .notes { margin: 6px 0 0; padding: 14px 18px 14px 36px; font-size: 12px; color: var(--ink-2); }
+  .notes li + li { margin-top: 3px; }
+
+  /* environment spec */
+  .fp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; }
+  .fp { padding: 4px 0 6px; }
+  .fp h3 { margin: 0; padding: 10px 16px; font: 700 15px var(--f-display); border-bottom: 1px solid var(--rule); }
+  .fp th { width: 42%; color: var(--ink-2); font-weight: 400; font-size: 12px; padding: 6px 16px; }
+  .fp td { font: 12px/1.45 var(--f-mono); padding: 6px 16px 6px 0; word-break: break-word; }
+
+  /* raw measurements */
+  details.raw { margin-bottom: 8px; }
+  details.raw > summary { display: flex; gap: 12px; align-items: baseline; padding: 11px 16px; cursor: pointer; list-style: none; }
+  details.raw > summary::-webkit-details-marker { display: none; }
+  details.raw > summary::before { content: "+"; font: 600 14px var(--f-mono); color: var(--ink-3); width: 10px; }
+  details.raw[open] > summary::before { content: "−"; }
+  details.raw > summary .g { min-width: 2.6em; color: var(--ink-3); font-size: 12px; }
+  details.raw > summary .t { font-weight: 600; }
+  details.raw > summary .tool { margin-left: auto; font: 11px var(--f-mono); color: var(--ink-3); }
+  details.raw > summary .err { color: var(--weak); font-size: 12px; }
+  .raw-body { border-top: 1px solid var(--rule); padding: 4px 0 12px; overflow-x: auto; }
+  .raw-body td, .raw-body th { font-size: 13px; padding: 6px 14px; }
+  .raw-body .key { display: block; font: 11px var(--f-mono); color: var(--ink-3); }
+  .raw-body .rnote { margin: 10px 16px 0; font-size: 12px; color: var(--ink-2); }
+  .chart-title { margin: 14px 16px 0; font: 12px var(--f-mono); color: var(--ink-2); }
+  canvas { display: block; width: calc(100% - 32px); height: 170px; margin: 6px 16px 0; background: #fff; border: 1px solid var(--rule-soft); }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .kpi { padding: 14px 16px; }
+  .kpi .v { font: 600 22px var(--f-mono); }
+  .kpi .u { font: 12px var(--f-mono); color: var(--ink-3); margin-left: 4px; }
+  .kpi .l { font-size: 12px; color: var(--ink-2); }
+
+  footer { padding: 18px 0 40px; border-top: 1px solid var(--rule); color: var(--ink-3); font: 11px var(--f-mono); }
+  summary:focus-visible, a:focus-visible { outline: 2px solid var(--good); outline-offset: 2px; }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 0 16px; }
+    .verdict { grid-template-columns: 1fr; padding: 20px 18px 4px; }
+    .grade-num { font-size: 68px; }
+    .hero-ruler { margin: 4px 18px 0; }
+    .legend { padding: 0 18px 18px; }
+    .col-wide { display: none; }
+    .hr-list { padding: 0 18px 10px; }
+    /* characteristics rows become two-line cards: name + score, value + ruler */
+    .char thead { display: none; }
+    table.char, .char tbody { display: block; }
+    .char tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; padding: 12px 16px; border-bottom: 1px solid var(--rule-soft); }
+    .char tr:last-child { border-bottom: 0; }
+    .char td, .char td:first-child { display: block; padding: 0; border: 0; text-align: left; }
+    .char td:nth-child(1) { grid-area: 1 / 1; }
+    .char td:nth-child(7) { grid-area: 1 / 2; text-align: right; }
+    .char td:nth-child(2) { grid-area: 2 / 1; }
+    .char td:nth-child(6) { grid-area: 2 / 2; align-self: center; }
+    .char td:nth-child(3), .char td:nth-child(4), .char td:nth-child(5) { display: none; }
+    .mini { width: 120px; margin-top: 0; }
+    .char .p-hint { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .needle { animation: none; } }
+  @media print { html { background: #fff; } .sheet { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="mast-top"><span class="doc">MACHINE-PROBE · 机器规格书</span><span id="docmeta"></span></div>
+    <h1 id="title">machine-probe</h1>
+    <p class="spec" id="spec"></p>
+  </header>
+
+  <main>
+    <section id="score-section">
+      <div class="sh"><h2>综合评分</h2><p id="score-ref"></p></div>
+      <div class="sheet">
+        <div class="verdict" id="verdict"></div>
+        <div class="hero-ruler" id="hero-ruler" aria-hidden="true"></div>
+        <p class="hr-list" id="hr-list"></p>
+        <p class="legend" id="legend"></p>
+      </div>
+    </section>
+
+    <section id="char-section">
+      <div class="sh"><h2>特性参数</h2><p>实测值与三个参照点对比：偏弱 · 主流 · 高端。橙色指针为实测位置。</p></div>
+      <div id="char"></div>
+    </section>
+
+    <section id="kpi-section">
+      <div class="sh"><h2>关键指标</h2><p>该结果文件没有可计分的 machine-probe 指标，以下只列出原始数值。</p></div>
+      <div class="kpis" id="kpis"></div>
+    </section>
+
+    <section id="fingerprint-section">
+      <div class="sh"><h2>环境规格</h2><p>运行时采集的硬件、虚拟化与系统信息。</p></div>
+      <div class="fp-grid" id="fingerprint"></div>
+    </section>
+
+    <section id="results-section">
+      <div class="sh"><h2>原始测量数据</h2><p>每项测试的中位数、范围、波动（CV）与重复次数。点击展开。</p></div>
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <footer id="footer">machine-probe</footer>
+</div>
+
+<script id="result-data" type="application/json">__RESULT_JSON__</script>
+<script>
+const data = JSON.parse(document.getElementById('result-data').textContent);
+const score = data.score || null;
+const $ = (id) => document.getElementById(id);
+
+function fmt(v) {
+  if (v == null || !Number.isFinite(v)) return '–';
+  const a = Math.abs(v);
+  return a >= 1000 ? v.toFixed(0) : a >= 10 ? v.toFixed(1) : v.toFixed(2);
+}
+function anchor(v) { return String(+v.toPrecision(3)); }
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const LABELS = {
+  mp_single_score: '单核得分', mp_multi_score: '多核得分', mp_speedup: '多核 / 单核加速比',
+  mp_efficiency: '多核扩展效率', mp_sha256_mibs: 'SHA-256 吞吐（单线程）',
+  mp_peak_score: '峰值得分', mp_score_at_vcpus: 'vCPU 数线程时得分', mp_scaling_at_vcpus: 'vCPU 数线程时加速比',
+  mp_sustained_first: '首个 5s 得分', mp_sustained_last: '最后 5s 得分', mp_throttle_drop: '持续负载降频', mp_cpu_steal: 'CPU steal',
+  mp_mem_write_gibs: '写带宽', mp_mem_read_gibs: '读带宽', mp_mem_copy_gibs: '拷贝带宽',
+  mp_seq_write_mibs: '顺序写', mp_seq_read_mibs: '顺序读', mp_sync4k_iops: '4K 同步写 IOPS',
+  mp_sync4k_p50_us: '4K 同步写延迟 p50', mp_sync4k_p99_us: '4K 同步写延迟 p99',
+  mp_files_create_per_s: '创建', mp_files_stat_per_s: 'stat', mp_files_read_per_s: '读取', mp_files_delete_per_s: '删除',
+  mp_spawn_per_s: '进程创建', mp_gzip_mibs: 'gzip 压缩', mp_gunzip_mibs: 'gzip 解压', mp_gzip_ratio: '压缩比',
+  mp_dns_median_ms: 'DNS 解析（中位数）', mp_tcp_connect_ms: 'TCP 建连 1.1.1.1:443', mp_download_mbps: '下载', mp_upload_mbps: '上传',
+};
+const GROUP_TITLES = { cpu: 'CPU', memory: '内存', disk: '磁盘', workload: '负载', network: '网络' };
+// Score bands on the 0–100 scale, shared by the hero ruler and every mini ruler.
+const ZONES = [['weak', 0, 40, '偏弱'], ['fair', 40, 65, '一般'], ['good', 65, 85, '良好'], ['excellent', 85, 100, '优秀']];
+const zoneFill = () => ZONES.map(([z, a, b]) => `<i style="width:${b - a}%;background:var(--z-${z})"></i>`).join('');
+
+const scoreByMetric = new Map();
+for (const g of score?.groups || []) for (const m of g.metrics) scoreByMetric.set(m.test + '\0' + m.key, m);
+
+function label(k) {
+  if (LABELS[k]) return LABELS[k];
+  const m = /^mp_https_(.+)_ms$/.exec(k);
+  return m ? `HTTPS ${m[1]}` : k;
+}
+function metric(id, key) {
+  const r = (data.results || []).find((x) => x.id === id || x.id.startsWith(id + '@'));
+  return r && r.metrics && r.metrics[key] ? r.metrics[key] : null;
+}
+
+// ratioText says how a value compares with the mainstream anchor.
+function ratioText(m) {
+  if (m.linear) return `主流约 ${anchor(m.typical)}${m.unit}，${m.better === 'lower' ? '越低越好' : '越高越好'}`;
+  const r = m.value / m.typical; // raw ratio; the "越低越好" suffix gives the direction
+  if (!Number.isFinite(r) || r <= 0) return '';
+  const what = m.better === 'lower' ? '，越低越好' : '';
+  if (r >= 0.95 && r <= 1.05) return `与主流相当${what}`;
+  const x = r >= 10 ? r.toFixed(0) : r.toFixed(r >= 2 ? 1 : 2);
+  return r > 1 ? `主流的 ${x} 倍${what}` : `主流的 ${(r * 100).toFixed(0)}%${what}`;
+}
+
+function renderHeader() {
+  const fp = data.fingerprint || {};
+  const title = data.label || fp.host?.hostname || 'machine-probe';
+  $('title').textContent = title;
+  document.title = `${title} · machine-probe 机器规格书`;
+  const started = data.startedAt ? new Date(data.startedAt) : null;
+  const when = started ? `${started.getFullYear()}-${String(started.getMonth() + 1).padStart(2, '0')}-${String(started.getDate()).padStart(2, '0')} ${started.toTimeString().slice(0, 5)}` : '';
+  $('docmeta').textContent = [`档位 ${data.profile || '?'}`, when, `用时 ${((data.durationMs || 0) / 1000).toFixed(0)} s`].filter(Boolean).join('  ·  ');
+  const mem = fp.memory?.total ? `${(fp.memory.total / 2 ** 30).toFixed(1)} GiB 内存` : null;
+  const spec = [
+    fp.cpu?.model, fp.cpu?.vcpus ? `${fp.cpu.vcpus} vCPU` : null, mem, fp.cpu?.arch || fp.host?.arch,
+    fp.virtualization?.label, data.provider, data.pricePerHour ? `$${data.pricePerHour}/h` : null,
+  ].filter(Boolean);
+  $('spec').innerHTML = spec.map((s) => `<span>${esc(s)}</span>`).join('');
+  const p = data.probe;
+  $('footer').textContent = `machine-probe ${p?.version || ''}${p?.goVersion ? ' · ' + p.goVersion : ''} · run ${data.id || ''}${score ? ' · 参照表 ' + score.reference : ''}`;
+}
+
+// verdict turns the scorecard into two plain sentences: where the machine sits, and what holds it back.
+function verdict() {
+  const head = {
+    excellent: '整体接近高端机器水平。', good: '整体高于主流云主机水平。',
+    fair: '整体略低于主流云主机水平。', weak: '整体明显低于主流云主机水平。',
+  }[score.rating];
+  const groups = [...score.groups].sort((a, b) => b.score - a.score);
+  const best = groups[0];
+  const all = score.groups.flatMap((g) => g.metrics);
+  const lows = all.filter((m) => m.score < 55).sort((a, b) => a.score - b.score).slice(0, 2);
+  let s = `${head}最强的是<b>${esc(best.title)}</b>（${best.score} 分）`;
+  if (groups.length > 1) s += `，最弱的是<b>${esc(groups[groups.length - 1].title)}</b>（${groups[groups.length - 1].score} 分）`;
+  s += '。';
+  if (lows.length) {
+    s += '主要短板：' + lows.map((m) => `<b class="lo">${esc(m.label)}</b> ${fmt(m.value)} ${esc(m.unit)}（${esc(ratioText(m))}）`).join('；') + '。';
+  } else {
+    s += '没有低于 55 分的单项。';
+  }
+  return s;
+}
+
+function renderScore() {
+  if (!score) { $('score-section').hidden = true; $('char-section').hidden = true; return; }
+  $('kpi-section').hidden = true;
+  $('score-ref').textContent = `参照表 ${score.reference} · 按分组加权`;
+  $('verdict').innerHTML = `
+    <div class="grade r-${esc(score.rating)}"><span class="grade-num">${score.overall}</span><span class="grade-of">/ 100</span><span class="grade-label">${esc(score.ratingLabel)}</span></div>
+    <p class="verdict-text">${verdict()}</p>`;
+
+  // Group labels sit above the track in up to three lanes so close scores don't overlap.
+  // Lane 0 starts out holding the overall needle's head.
+  const lanes = [[score.overall], [], []];
+  const minGap = 64 / Math.max(240, $('hero-ruler').clientWidth) * 100; // label width in score units
+  const placed = [...score.groups].sort((a, b) => a.score - b.score).map((g) => {
+    const lane = lanes.findIndex((xs) => xs.every((x) => Math.abs(g.score - x) >= minGap));
+    if (lane < 0) return null;
+    lanes[lane].push(g.score);
+    const top = 50 - lane * 22;
+    return `<div class="hr-group r-${esc(g.rating)}" style="left:${g.score}%;top:${top}px;--stem:${74 - top - 20}px">${esc(g.title)}<b style="color:var(--c)">${g.score}</b></div>`;
+  });
+  // On narrow screens the labels don't fit above the track: mark positions with ticks and list the groups below.
+  const compact = placed.includes(null);
+  const ruler = $('hero-ruler');
+  ruler.classList.toggle('compact', compact);
+  const marks = compact
+    ? score.groups.map((g) => `<span class="hr-mark" style="left:${g.score}%"></span>`).join('')
+    : placed.join('');
+  $('hr-list').innerHTML = compact
+    ? score.groups.map((g) => `<span class="r-${esc(g.rating)}">${esc(g.title)} <b>${g.score}</b></span>`).join('')
+    : '';
+  const nums = [0, 40, 65, 85, 100].map((n) => `<span class="hr-num" style="left:${n}%">${n}</span>`).join('');
+  const zones = ZONES.map(([, a, b, name]) => `<span class="hr-zone" style="left:${(a + b) / 2}%;top:116px">${name}</span>`).join('');
+  ruler.innerHTML = `${marks}<div class="hr-track">${zoneFill()}</div><div class="hr-ticks"></div>${nums}${zones}
+    <div class="needle hr-needle" style="--x:${score.overall}%" title="总分 ${score.overall}"></div>`;
+  $('legend').textContent = `${score.scale} 主流 = 当前一代 4 vCPU 通用型云主机（如 AWS Graviton3 / Intel Sapphire Rapids / AMD Genoa + 普通云盘）。参照点是估算值，用于建立直观感受，不是厂商排名。`;
+
+  const notes = (score.notes || []).map((n) => `<li>${esc(n)}</li>`).join('');
+  let row = 0;
+  $('char').innerHTML = score.groups.map((g) => `
+    <div class="sheet group">
+      <div class="group-head r-${esc(g.rating)}"><h3>${esc(g.title)}</h3><span class="gs">${g.score} · ${esc(g.ratingLabel)}</span><span class="gw">权重 ${(g.weight * 100).toFixed(0)}%</span></div>
+      <table class="char">
+        <colgroup><col><col class="c-val"><col class="c-anc col-wide"><col class="c-anc"><col class="c-anc col-wide"><col class="c-pos"><col class="c-rate"></colgroup>
+        <thead><tr><th>参数</th><th class="num">实测</th><th class="num col-wide">偏弱</th><th class="num">主流</th><th class="num col-wide">高端</th><th>位置</th><th class="num">评分</th></tr></thead>
+        <tbody>${g.metrics.map((m) => `
+          <tr>
+            <td><span class="p-name">${esc(m.label)}</span><span class="p-hint">${esc(m.hint)}</span></td>
+            <td class="num"><span class="val">${fmt(m.value)}<small>${esc(m.unit)}</small>${m.noisy ? ' <span class="noisy" title="多次测量波动大（CV > 25%）">⚠</span>' : ''}</span><span class="cmp">${esc(ratioText(m))}</span></td>
+            <td class="num anc col-wide">${anchor(m.weak)}</td>
+            <td class="num anc typ">${anchor(m.typical)}</td>
+            <td class="num anc col-wide">${anchor(m.excellent)}</td>
+            <td><div class="mini">${zoneFill()}${[40, 65, 90].map((t) => `<span class="tk" style="left:${t}%"></span>`).join('')}<span class="needle" style="--x:${Math.max(1, Math.min(99, m.score))}%;--d:${(0.15 + 0.03 * row++).toFixed(2)}s"></span></div></td>
+            <td class="num"><span class="rate r-${esc(m.rating)}">${m.score}<span>${esc(m.ratingLabel)}</span></span></td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </div>`).join('') + (notes ? `<div class="sheet"><ul class="notes">${notes}</ul></div>` : '');
+}
+
+function renderKpis() {
+  const picks = [
+    ['cpu.go', 'mp_single_score', 'CPU 单核'], ['cpu.go', 'mp_multi_score', 'CPU 多核'],
+    ['mem.go', 'mp_mem_copy_gibs', '内存拷贝'], ['disk.seq', 'mp_seq_write_mibs', '磁盘顺序写'],
+    ['disk.seq', 'mp_sync4k_p99_us', '4K 同步写 p99'], ['proc.spawn', 'mp_spawn_per_s', '进程创建'],
+    ['net.latency', 'mp_tcp_connect_ms', 'TCP 建连'], ['net.throughput', 'mp_download_mbps', '下载'],
+  ];
+  const html = picks.map(([id, key, l]) => {
+    const m = metric(id, key);
+    return m ? `<div class="sheet kpi"><span class="v">${fmt(m.median)}</span><span class="u">${esc(m.unit)}</span><div class="l">${esc(l)}</div></div>` : '';
+  }).join('');
+  if (!html) $('kpi-section').hidden = true;
+  $('kpis').innerHTML = html;
+}
+
+function renderFingerprint() {
+  const sections = new Map();
+  for (const r of data.fingerprintSummary || []) {
+    if (!sections.has(r.section)) sections.set(r.section, []);
+    sections.get(r.section).push(r);
+  }
+  if (!sections.size) { $('fingerprint-section').hidden = true; return; }
+  $('fingerprint').innerHTML = [...sections.entries()].map(([section, items]) => `
+    <div class="sheet fp"><h3>${esc(section)}</h3>
+      <table>${items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(i.value)}</td></tr>`).join('')}</table></div>`).join('');
+}
+
+function drawSeries(canvas, series) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr; ctx.scale(dpr, dpr);
+  const pad = { l: 52, r: 18, t: 14, b: 26 };
+  const pts = series.points;
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  const yMax = Math.max(...ys) * 1.12 || 1;
+  const X = (x) => pad.l + (x - xMin) / (xMax - xMin || 1) * (w - pad.l - pad.r);
+  const Y = (y) => h - pad.b - y / yMax * (h - pad.t - pad.b);
+  const mono = getComputedStyle(document.body).getPropertyValue('--f-mono');
+  ctx.font = `10px ${mono}`;
+  ctx.fillStyle = '#7D8692'; ctx.strokeStyle = '#DCE0E5'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const v = yMax * i / 4, y = Math.round(Y(v)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.fillText(fmt(v), pad.l - 6, y + 3);
+  }
+  ctx.textAlign = 'center';
+  pts.forEach(([x]) => ctx.fillText(String(x), X(x), h - 8));
+  ctx.strokeStyle = '#14181D'; ctx.lineWidth = 1.5; ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
+  ctx.stroke();
+  ctx.fillStyle = '#E4570E';
+  pts.forEach(([x, y]) => { ctx.beginPath(); ctx.arc(X(x), Y(y), 3, 0, Math.PI * 2); ctx.fill(); });
+}
+
+function renderResults() {
+  const order = data.groups && data.groups.length ? [...data.groups] : ['cpu', 'memory', 'disk', 'workload', 'network'];
+  const results = [...(data.results || [])];
+  for (const r of results) if (!order.includes(r.group)) order.push(r.group);
+  results.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
+  const el = $('results');
+  for (const r of results) {
+    const d = document.createElement('details');
+    d.className = 'sheet raw';
+    d.open = !!r.error;
+    const entries = Object.entries(r.metrics || {});
+    let body = '';
+    if (entries.length) {
+      body += `<table><thead><tr><th>指标</th><th class="num">中位数</th><th>单位</th><th class="num">最小</th><th class="num">最大</th><th class="num">CV</th><th class="num">n</th><th class="num">评分</th></tr></thead><tbody>`
+        + entries.map(([k, m]) => {
+          const noisy = m.cv > 25;
+          const s = scoreByMetric.get(r.id + '\0' + k);
+          return `<tr><th>${esc(label(k))}<span class="key">${esc(k)} · ${m.better === 'lower' ? '越低越好' : '越高越好'}</span></th>`
+            + `<td class="num">${fmt(m.median)}</td><td class="mono">${esc(m.unit)}</td><td class="num">${fmt(m.min)}</td><td class="num">${fmt(m.max)}</td>`
+            + `<td class="num ${noisy ? 'noisy' : ''}">±${(m.cv ?? 0).toFixed(1)}%${noisy ? ' ⚠' : ''}</td><td class="num">${m.n ?? ''}</td>`
+            + `<td class="num">${s ? `<span class="rate r-${esc(s.rating)}">${s.score}<span>${esc(s.ratingLabel)}</span></span>` : ''}</td></tr>`;
+        }).join('') + '</tbody></table>';
+    }
+    if (r.notes) body += `<p class="rnote">${esc(r.notes)}</p>`;
+    d.innerHTML = `<summary><span class="g">${esc(GROUP_TITLES[r.group] || r.group)}</span><span class="t">${esc(r.title)}</span>`
+      + `${r.error ? `<span class="err">失败：${esc(r.error)}</span>` : ''}<span class="tool">${esc(r.tool || '')}</span></summary><div class="raw-body">${body}</div>`;
+    const charts = [];
+    for (const s of r.series || []) {
+      const t = document.createElement('div');
+      t.className = 'chart-title';
+      t.textContent = `${s.name} · ${s.yLabel} / ${s.xLabel}`;
+      const c = document.createElement('canvas');
+      d.lastChild.append(t, c);
+      charts.push([c, s]);
+    }
+    // Canvases inside a closed <details> have no size yet, so draw on first open.
+    let drawn = false;
+    const draw = () => { if (d.open && !drawn) { drawn = true; charts.forEach(([c, s]) => drawSeries(c, s)); } };
+    d.addEventListener('toggle', draw);
+    el.appendChild(d);
+    draw();
+  }
+}
+
+renderHeader();
+renderScore();
+renderKpis();
+renderFingerprint();
+renderResults();
+</script>
+</body>
+</html>
